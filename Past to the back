@@ -1,14 +1,18 @@
 #include <LiquidCrystal.h>
 #include <Key.h>
 #include <Keypad.h>
-
+int niveau = 0;
+int attente = 0;
 int iplant1 = -1;
 int iplant2 = -1;
+int shield = 0;
 int hauteur = 0;
 int vie = 3;
 int ivie = 0;
 int score = -20;
 int palier = 100;
+int ishield = random(50,65);
+int i2shield = 0;
 unsigned long reset = 0;
 long intervalle = 500; 
 unsigned long reset_saut = 0;
@@ -64,7 +68,7 @@ B01110,
 B01110,
 B11110,
 };
-byte Life[8] = { //j'ai fais un byte de 7 pour que ça soit centré, à tester si ça marche
+byte Life[8] = {
 B00000,
 B01010,
 B11111,
@@ -72,6 +76,17 @@ B11111,
 B01110,
 B00100,
 B00000,
+B00000,
+};
+
+byte Shield[8] = {
+B00000,
+B10101,
+B11111,
+B11111,
+B01110,
+B01110,
+B00100,
 B00000,
 };
 
@@ -93,11 +108,53 @@ void setup(){
   lcd.createChar(4, Run_Man_Mirror);
   lcd.createChar(5, Static_Man_Mirror);
   lcd.createChar(6,Life);
-  lcd.setCursor(0, 1);
-  lcd.print(char(2));
+  lcd.createChar(7,Shield);
 }
 
 void loop() {
+  char touche = clavier.getKey();
+  if (niveau == 0 && attente == 0){
+    lcd.setCursor(0,0);
+    lcd.print("Niveau entre");
+    lcd.setCursor(5,1);
+    lcd.print( "1 et 10 ?");
+    if (touche == '1'){
+      niveau = 1;
+    }
+    else if (touche == '2'){
+      niveau = 2;
+    }
+    else if (touche == '3'){
+      niveau = 3;
+    }
+    else if (touche == '4'){
+      niveau = 4;
+    }
+    else if (touche == '5'){
+      niveau = 5;
+    }
+    else if (touche == '6'){
+      niveau = 6;
+    }
+    else if (touche == '7'){
+      niveau = 7;
+    }
+    else if (touche == '8'){
+     niveau = 8;
+    }
+    else if (touche == '9'){
+      niveau = 9;
+    }
+  }
+  else if (niveau != 0 && attente == 0){
+  lcd.clear();
+  intervalle = intervalle/niveau;
+  intervalle_saut = intervalle_saut/niveau;
+  lcd.setCursor(0, 1);
+  lcd.print(char(2));
+  attente = attente +1;
+  }
+  else {
   if (vie <= 0){
     lcd.clear();
     lcd.setCursor(3,0);
@@ -115,8 +172,8 @@ void loop() {
     i = 0;
     ivie = 0;
     hauteur = 0;
-    intervalle = 500; 
-    intervalle_saut = 1000;
+    intervalle = 500/niveau; 
+    intervalle_saut = 1000/niveau;
     lcd.setCursor(0, 1);
     lcd.print(char(2));
   }  
@@ -125,11 +182,24 @@ void loop() {
     lcd.setCursor(ivie,0);
     lcd.print(char(6));
   }
-  
+
+  for (shield > 0; i2shield < shield; i2shield++){
+  lcd.setCursor(vie+1+i2shield,0);
+  lcd.print(char(7));    
+  }
+  if (i2shield == shield){
+    lcd.setCursor(vie+1+i2shield,0);
+    lcd.write(0xFE);
+    i2shield = 0;
+  }
   if (ivie == vie){
     lcd.setCursor(ivie,0);
     lcd.write(0xFE);
     ivie =0;
+  }
+  
+  if(ishield == -1){
+    ishield = random(50,65);    
   }
 
   if (iplant1 == -1){
@@ -153,9 +223,10 @@ void loop() {
     lcd.print(char(3));
     lcd.setCursor(iplant2, 1);
     lcd.print(char(3));
-  
+    lcd.setCursor(ishield,1);
+    lcd.print(char(7));
 
-  char touche = clavier.getKey();
+  char touche = clavier.getKey();  
 
   if (touche == '6' && i % 2 == 1 && hauteur == 0){
     lcd.setCursor(i - 1, 1);
@@ -219,23 +290,37 @@ void loop() {
     i = 1;
   }
 
-  if (score >= palier && palier > 50){
+  if (score >= palier){
     palier = palier + 100;
-    intervalle = intervalle - 25;
-    intervalle_saut = intervalle_saut - 50;
+    intervalle = intervalle - 0.05*intervalle;
+    intervalle_saut = intervalle_saut - 0.05*intervalle_saut;
   }
 
   if (millis() - reset >= intervalle){
     reset = millis();
+    ishield = ishield - 1;
     iplant1 = iplant1 - 1;
     iplant2 = iplant2 - 1;
     lcd.setCursor(iplant1 + 1, 1);
     lcd.write(0xFE);
     lcd.setCursor(iplant2 + 1, 1);
     lcd.write(0xFE);
+    lcd.setCursor(ishield + 1, 1);
+    lcd.write(0xFE);
   }
 
   if (i - 1 == iplant1 && hauteur == 0){
+    if (shield > 0){
+      shield = shield - 1;
+      lcd.setCursor(vie+1,1);
+      lcd.write(0xFE);
+      iplant1  = random(16,25);
+      lcd.setCursor(i - 1, 1);
+      lcd.print(char(2));
+        while (iplant1 + 1 == iplant2 || iplant1 -1 == iplant2){
+        iplant1=random(16,25);
+     } 
+    }else{
       vie = vie - 1;
       iplant1  = random(16,25);
       lcd.setCursor(i - 1, 1);
@@ -243,15 +328,36 @@ void loop() {
         while (iplant1 + 1 == iplant2 || iplant1 -1 == iplant2){
         iplant1=random(16,25);
         }
+      }
     }
 
   if (i - 1 == iplant2 && hauteur == 0){
-    vie = vie - 1;
-    iplant2  = random(16,25);
-    lcd.setCursor(i - 1, 1);
-    lcd.print(char(2));
-      while (iplant2 + 1 == iplant1 || iplant2 - 1 == iplant1){
-      iplant1=random(16,25);
+    if (shield > 0){
+      shield = shield - 1;
+      lcd.setCursor(vie+1,1);
+      lcd.write(0xFE);
+      iplant2  = random(16,25);
+      lcd.setCursor(i - 1, 1);
+      lcd.print(char(2));
+        while (iplant2 + 1 == iplant1 || iplant2 - 1 == iplant1){
+        iplant1=random(16,25);
+      } 
+    } else{
+      vie = vie - 1;
+      iplant2  = random(16,25);
+      lcd.setCursor(i - 1, 1);
+      lcd.print(char(2));
+        while (iplant1 + 1 == iplant2 || iplant1 -1 == iplant2){
+        iplant1=random(16,25);
+        }
+      }
     }
+  
+  if (i-1 == ishield && hauteur == 0){
+    shield = shield + 1;
+    ishield = random(50,65);
+    lcd.setCursor(vie+1,0);
+    lcd.print(char(7));    
   }
+}
 }
